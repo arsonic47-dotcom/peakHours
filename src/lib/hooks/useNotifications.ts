@@ -5,16 +5,14 @@ import { useCallback, useRef } from "react";
 const PERM_KEY = "peakhours-notification-permission";
 
 export function useNotifications() {
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const unlockedRef = useRef(false);
 
   const initAudio = useCallback(() => {
     if (unlockedRef.current) return;
     try {
-      const a = new Audio();
-      a.volume = 0.3;
+      const a = new Audio("/sounds/complete.mp3");
+      a.volume = 0.001;
       a.play().then(() => { a.pause(); a.currentTime = 0; }).catch(() => {});
-      audioRef.current = a;
       unlockedRef.current = true;
     } catch {}
   }, []);
@@ -36,10 +34,9 @@ export function useNotifications() {
 
       if (soundUrl) {
         try {
-          if (!audioRef.current) audioRef.current = new Audio();
-          audioRef.current.src = soundUrl;
-          audioRef.current.volume = 0.3;
-          audioRef.current.play().catch(() => {});
+          const a = new Audio(soundUrl);
+          a.volume = 0.3;
+          a.play().catch(() => {});
         } catch {}
       }
 
