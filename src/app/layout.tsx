@@ -21,7 +21,7 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const cookieStore = await cookies();
-  const theme = cookieStore.get("peakhours-theme")?.value === "dark" ? "dark" : "";
+  const theme = cookieStore.get("peakhours-theme")?.value === "light" ? "" : "dark";
 
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} ${theme}`} suppressHydrationWarning>

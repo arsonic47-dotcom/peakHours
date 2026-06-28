@@ -29,12 +29,12 @@ function applyTheme(theme: "light" | "dark") {
 }
 
 function getInitialTheme(): "light" | "dark" {
-  if (typeof window === "undefined") return "light";
+  if (typeof window === "undefined") return "dark";
   try {
     const saved = localStorage.getItem("peakhours-theme");
     if (saved === "dark" || saved === "light") return saved;
   } catch {}
-  return "light";
+  return "dark";
 }
 
 export const useUIStore = create<UIState>((set) => ({
