@@ -21,12 +21,16 @@ export function useNotifications() {
   const unlockedRef = useRef(false);
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
   const volumeRef = useRef(getSavedVolume());
+  const lastSoundRef = useRef<string | null>(null);
   const [volume, setVolumeState] = useState(volumeRef.current);
 
   const setVolume = useCallback((v: number) => {
     const clamped = Math.max(0, Math.min(1, v));
     volumeRef.current = clamped;
     setVolumeState(clamped);
+    if (currentAudioRef.current) {
+      currentAudioRef.current.volume = clamped;
+    }
     try {
       localStorage.setItem(VOLUME_KEY, clamped.toString());
     } catch {}
@@ -61,19 +65,36 @@ export function useNotifications() {
     }
   }, []);
 
+  const replaySound = useCallback(() => {
+    const url = lastSoundRef.current;
+    if (!url) return;
+    try {
+      stopSound();
+      const a = new Audio(url);
+      a.volume = volumeRef.current;
+      a.play().catch(() => {});
+      currentAudioRef.current = a;
+      a.addEventListener("ended", () => {
+        if (currentAudioRef.current === a) currentAudioRef.current = null;
+      });
+    } catch {}
+  }, []);
+
   const notify = useCallback(
-    (title: string, body: string, soundUrl?: string) => {
+    (title: string, body: string, soundUrl?: string, onEnd?: () => void) => {
       if (typeof window === "undefined") return;
 
       if (soundUrl) {
         try {
           stopSound();
+          lastSoundRef.current = soundUrl;
           const a = new Audio(soundUrl);
           a.volume = volumeRef.current;
           a.play().catch(() => {});
           currentAudioRef.current = a;
           a.addEventListener("ended", () => {
             if (currentAudioRef.current === a) currentAudioRef.current = null;
+            onEnd?.();
           });
         } catch {}
       }
@@ -94,5 +115,5 @@ export function useNotifications() {
     []
   );
 
-  return { requestPermission, notify, initAudio, stopSound, volume, setVolume };
+  return { requestPermission, notify, initAudio, stopSound, replaySound, volume, setVolume };
 }

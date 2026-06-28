@@ -21,7 +21,6 @@ import {
   Brain,
   Coffee,
   Clock,
-  Sparkles,
   Save,
   X,
   PictureInPicture2,
@@ -30,7 +29,6 @@ import {
   VolumeX,
   Volume2,
 } from "lucide-react";
-import { useQuote } from "@/lib/hooks/useQuote";
 import { useNotifications } from "@/lib/hooks/useNotifications";
 import { useFloatingTimer } from "@/lib/hooks/useFloatingTimer";
 import { motion } from "framer-motion";
@@ -52,7 +50,6 @@ export function TimerPage() {
   const { presets, addPreset, deletePreset } = usePresetStore();
   const supabase = createClient();
 
-  const [showComplete, setShowComplete] = useState(false);
   const [showConfirmPartial, setShowConfirmPartial] = useState(false);
   const [pendingPartialMinutes, setPendingPartialMinutes] = useState(0);
   const [pendingAction, setPendingAction] = useState<"stop" | "reset" | null>(null);
@@ -63,8 +60,8 @@ export function TimerPage() {
   const [pendingMode, setPendingMode] = useState<typeof mode | null>(null);
   const [showSavePreset, setShowSavePreset] = useState(false);
   const [presetName, setPresetName] = useState("");
-  const { quote } = useQuote();
-  const { requestPermission, notify, initAudio, stopSound, volume: notifVolume, setVolume: setNotifVolume } = useNotifications();
+  const { requestPermission, notify, initAudio, stopSound, replaySound, volume: notifVolume, setVolume: setNotifVolume } = useNotifications();
+  const [soundPlaying, setSoundPlaying] = useState(false);
 
   const autoSaveSession = useCallback(async (minutes: number) => {
     if (minutes <= 0) return;
@@ -91,16 +88,18 @@ export function TimerPage() {
   useEffect(() => {
     const unsub = useTimerStore.subscribe((state) => {
       if (state.completed && state.lastCompletedPhase === "work") {
-        setShowComplete(true);
+        setSoundPlaying(true);
         autoSaveSession(state.config.work);
-        notify("Focus Complete", `${state.config.work} minute session saved`, "/sounds/complete.mp3");
+        notify("Focus Complete", `${state.config.work} minute session saved`, "/sounds/complete.mp3", () => setSoundPlaying(false));
+        showToast(`Break started: ${state.config.break} min`, "info");
+        resume();
       } else if (state.completed && state.lastCompletedPhase === "break") {
-        setShowComplete(true);
-        notify("Break Over", "Time to focus!", "/sounds/break.mp3");
+        setSoundPlaying(true);
+        notify("Break Over", "Time to focus!", "/sounds/break.mp3", () => setSoundPlaying(false));
       }
     });
     return () => unsub();
-  }, [autoSaveSession, notify]);
+  }, [autoSaveSession, notify, resume]);
 
   const pct = isBreak
     ? ((config.break * 60 - timeLeft) / (config.break * 60)) * 100
@@ -364,9 +363,48 @@ export function TimerPage() {
           </div>
         </div>
 
+        <div className="flex items-center justify-center gap-3 mb-6">
+          <button
+            onClick={replaySound}
+            className="p-2 rounded-lg text-text-tertiary hover:text-text-primary hover:bg-surface-tertiary transition-colors"
+            title="Replay last sound"
+          >
+            <RotateCcw size={16} />
+          </button>
+          <button
+            onClick={stopSound}
+            className="p-2 rounded-lg text-text-tertiary hover:text-text-primary hover:bg-surface-tertiary transition-colors"
+            title="Stop sound"
+          >
+            <VolumeX size={16} />
+          </button>
+          <div className="flex items-center gap-2">
+            <Volume2 size={14} className="text-text-tertiary" />
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.05}
+              value={notifVolume}
+              onChange={(e) => setNotifVolume(parseFloat(e.target.value))}
+              className="w-24 h-1.5 rounded-full appearance-none cursor-pointer bg-surface-tertiary accent-primary-500
+                [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5
+                [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary-500
+                [&::-webkit-slider-thumb]:shadow-sm
+                [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:w-3.5 [&::-moz-range-thumb]:h-3.5
+                [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-primary-500
+                [&::-moz-range-thumb]:border-0"
+            />
+            <span className="text-xs text-text-tertiary w-8 text-right">{Math.round(notifVolume * 100)}%</span>
+          </div>
+        </div>
+
         <div className="flex items-center justify-center gap-3 mb-8 flex-wrap">
           {!isRunning ? (
-            <Button size="xl" onClick={() => { requestPermission(); initAudio(); start(); }} className="gap-2 min-w-[140px] max-sm:min-w-[120px]">
+            <Button size="xl" onClick={() => { requestPermission(); initAudio(); start(); }} className="gap-2 min-w-[140px] max-sm:min-w-[120px]"
+              disabled={soundPlaying}
+              title={soundPlaying ? "Waiting for break sound to finish..." : undefined}
+            >
               <Play size={20} />
               {timeLeft === config.work * 60 && !isBreak ? "Start" : "Resume"}
             </Button>
@@ -460,59 +498,6 @@ export function TimerPage() {
           </div>
         </Card>
       </div>
-
-      <Modal open={showComplete} onClose={() => setShowComplete(false)} title="Session Complete!" size="sm">
-        <div className="text-center py-4">
-          <div className="w-16 h-16 rounded-full bg-success/10 mx-auto mb-4 flex items-center justify-center">
-            <Sparkles className="h-8 w-8 text-success" />
-          </div>
-          <div className="flex gap-3 items-start bg-surface-secondary/60 border border-border rounded-xl px-4 py-3 mb-6 mx-auto max-w-sm">
-            <Sparkles className="h-5 w-5 text-primary-500 shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm text-text-secondary leading-relaxed italic">
-                &ldquo;{quote.text}&rdquo;
-              </p>
-              <p className="text-xs text-text-tertiary mt-1">&mdash; {quote.author}</p>
-            </div>
-          </div>
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <button
-              onClick={stopSound}
-              className="p-2 rounded-lg text-text-tertiary hover:text-text-primary hover:bg-surface-tertiary transition-colors"
-              title="Stop sound"
-            >
-              <VolumeX size={16} />
-            </button>
-            <div className="flex items-center gap-2">
-              <Volume2 size={14} className="text-text-tertiary" />
-              <input
-                type="range"
-                min={0}
-                max={1}
-                step={0.05}
-                value={notifVolume}
-                onChange={(e) => setNotifVolume(parseFloat(e.target.value))}
-                className="w-24 h-1.5 rounded-full appearance-none cursor-pointer bg-surface-tertiary accent-primary-500
-                  [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5
-                  [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary-500
-                  [&::-webkit-slider-thumb]:shadow-sm
-                  [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:w-3.5 [&::-moz-range-thumb]:h-3.5
-                  [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-primary-500
-                  [&::-moz-range-thumb]:border-0"
-              />
-              <span className="text-xs text-text-tertiary w-8 text-right">{Math.round(notifVolume * 100)}%</span>
-            </div>
-          </div>
-          <div className="flex gap-3 justify-center">
-            <Button variant="secondary" onClick={() => { stopSound(); setShowComplete(false); start(); }}>
-              Start Next
-            </Button>
-            <Button variant="ghost" onClick={() => { stopSound(); setShowComplete(false); }}>
-              Close
-            </Button>
-          </div>
-        </div>
-      </Modal>
 
       <Modal open={showConfirmPartial} onClose={() => setShowConfirmPartial(false)} title="Save Session?" size="sm">
         <div className="text-center py-4">
