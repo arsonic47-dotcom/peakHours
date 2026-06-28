@@ -22,6 +22,7 @@ export function useNotifications() {
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
   const volumeRef = useRef(getSavedVolume());
   const lastSoundRef = useRef<string | null>(null);
+  const onEndRef = useRef<(() => void) | undefined>(undefined);
   const [volume, setVolumeState] = useState(volumeRef.current);
 
   const setVolume = useCallback((v: number) => {
@@ -65,37 +66,39 @@ export function useNotifications() {
     }
   }, []);
 
+  const playUrl = useCallback((url: string) => {
+    const a = new Audio(url);
+    a.volume = volumeRef.current;
+    a.play().catch(() => {
+      onEndRef.current?.();
+    });
+    currentAudioRef.current = a;
+    a.addEventListener("ended", () => {
+      if (currentAudioRef.current === a) currentAudioRef.current = null;
+      onEndRef.current?.();
+    });
+  }, []);
+
   const replaySound = useCallback(() => {
     const url = lastSoundRef.current;
     if (!url) return;
     try {
       stopSound();
-      const a = new Audio(url);
-      a.volume = volumeRef.current;
-      a.play().catch(() => {});
-      currentAudioRef.current = a;
-      a.addEventListener("ended", () => {
-        if (currentAudioRef.current === a) currentAudioRef.current = null;
-      });
+      playUrl(url);
     } catch {}
-  }, []);
+  }, [playUrl]);
 
   const notify = useCallback(
     (title: string, body: string, soundUrl?: string, onEnd?: () => void) => {
       if (typeof window === "undefined") return;
 
+      onEndRef.current = onEnd;
+
       if (soundUrl) {
         try {
           stopSound();
           lastSoundRef.current = soundUrl;
-          const a = new Audio(soundUrl);
-          a.volume = volumeRef.current;
-          a.play().catch(() => {});
-          currentAudioRef.current = a;
-          a.addEventListener("ended", () => {
-            if (currentAudioRef.current === a) currentAudioRef.current = null;
-            onEnd?.();
-          });
+          playUrl(soundUrl);
         } catch {}
       }
 
@@ -112,7 +115,7 @@ export function useNotifications() {
         } catch {}
       }
     },
-    []
+    [playUrl]
   );
 
   return { requestPermission, notify, initAudio, stopSound, replaySound, volume, setVolume };
