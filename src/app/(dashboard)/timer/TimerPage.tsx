@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useTimerStore, formatTimerTime } from "@/lib/store/timerStore";
 import { useSessionStore } from "@/lib/store/sessionStore";
 import { useUIStore } from "@/lib/store/uiStore";
@@ -52,6 +52,8 @@ export function TimerPage() {
   const [showCustomForm, setShowCustomForm] = useState(false);
   const [customWork, setCustomWork] = useState("25");
   const [customBreak, setCustomBreak] = useState("5");
+  const [showModeConfirm, setShowModeConfirm] = useState(false);
+  const [pendingMode, setPendingMode] = useState<typeof mode | null>(null);
   const { quote } = useQuote();
   const { requestPermission, notify, initAudio } = useNotifications();
 
@@ -139,32 +141,47 @@ export function TimerPage() {
     else reset();
   };
 
-  const floatingTimer = useFloatingTimer();
-  const handlePartialStopRef = useRef(handlePartialStop);
-  handlePartialStopRef.current = handlePartialStop;
+  const handleModeSwitch = (newMode: typeof mode) => {
+    const hasProgress = timeLeft < config.work * 60;
+    if (hasProgress) {
+      setPendingMode(newMode);
+      setShowModeConfirm(true);
+    } else {
+      setMode(newMode);
+      setShowCustomForm(false);
+    }
+  };
 
-  useEffect(() => {
-    const handler = (e: MessageEvent) => {
-      if (e.origin !== window.location.origin) return;
-      if (e.source !== floatingTimer.pipWindow.current) return;
-      if (e.data === "pip-pause") {
-        const s = useTimerStore.getState();
-        if (s.isRunning) s.pause();
-        else {
-          requestPermission();
-          initAudio();
-          s.resume();
-        }
-      } else if (e.data === "pip-stop") {
-        handlePartialStopRef.current();
-      } else if (e.data === "pip-focus") {
-        window.focus();
-        floatingTimer.close();
-      }
-    };
-    window.addEventListener("message", handler);
-    return () => window.removeEventListener("message", handler);
-  }, [floatingTimer.close, floatingTimer.pipWindow, requestPermission, initAudio]);
+  const confirmModeSwitch = () => {
+    if (pendingMode) {
+      setMode(pendingMode);
+      setShowCustomForm(false);
+    }
+    setShowModeConfirm(false);
+    setPendingMode(null);
+  };
+
+  const cancelModeSwitch = () => {
+    setShowModeConfirm(false);
+    setPendingMode(null);
+  };
+
+  const handleFloatingToggle = useCallback(() => {
+    const s = useTimerStore.getState();
+    if (s.isRunning) {
+      s.pause();
+      return;
+    }
+    requestPermission();
+    initAudio();
+    s.resume();
+  }, [requestPermission, initAudio]);
+
+  const floatingTimer = useFloatingTimer({
+    onToggleRunning: handleFloatingToggle,
+    onStop: handlePartialStop,
+  });
+  const floatingInactive = !isRunning && !isBreak && timeLeft === config.work * 60;
 
   return (
     <div className="animate-fade-in">
@@ -178,10 +195,7 @@ export function TimerPage() {
           {MODES.map((m) => (
             <button
               key={m.id}
-              onClick={() => {
-                setMode(m.id);
-                setShowCustomForm(false);
-              }}
+              onClick={() => handleModeSwitch(m.id)}
               className={cn(
                 "rounded-xl px-5 py-2.5 text-sm font-medium transition-all duration-200",
                 mode === m.id
@@ -290,8 +304,21 @@ export function TimerPage() {
         </div>
 
         <div className="flex items-center justify-center -mt-4 mb-8">
-          <button
-            disabled={!isRunning && !isBreak && timeLeft === config.work * 60}
+          <Button
+            type="button"
+            size="sm"
+            variant={floatingTimer.isOpen ? "primary" : "secondary"}
+            disabled={floatingInactive}
+            aria-pressed={floatingTimer.isOpen}
+            title={
+              !floatingTimer.isSupported
+                ? "Picture-in-Picture is not supported in this browser"
+                : floatingInactive
+                  ? "Start the timer before popping it out"
+                  : floatingTimer.isOpen
+                    ? "Close floating timer"
+                    : "Open floating timer"
+            }
             onClick={() => {
               if (!floatingTimer.isSupported) {
                 showToast("Picture-in-Picture is not supported in this browser", "info");
@@ -301,17 +328,22 @@ export function TimerPage() {
               else floatingTimer.open();
             }}
             className={cn(
-              "flex items-center gap-1.5 text-xs font-medium transition-colors rounded-lg px-3 py-1.5",
-              !floatingTimer.isSupported || (!isRunning && !isBreak && timeLeft === config.work * 60)
-                ? "opacity-40 cursor-not-allowed"
-                : floatingTimer.isOpen
-                  ? "bg-primary-600 text-white"
-                  : "text-text-tertiary hover:text-text-primary hover:bg-surface-secondary"
+              "group min-w-[172px] gap-2 border shadow-sm",
+              floatingTimer.isOpen
+                ? "border-primary-600 shadow-primary-600/20"
+                : "border-border bg-surface hover:border-primary-200 hover:bg-primary-50",
+              !floatingTimer.isSupported && "opacity-70"
             )}
           >
-            <PictureInPicture2 size={14} />
-            {floatingTimer.isOpen ? "Floating Timer" : "Pop Out Timer"}
-          </button>
+            <PictureInPicture2
+              size={15}
+              className={cn(
+                "transition-transform",
+                !floatingTimer.isOpen && "text-primary-600 group-hover:scale-105"
+              )}
+            />
+            <span>{floatingTimer.isOpen ? "Floating timer" : "Pop out timer"}</span>
+          </Button>
         </div>
 
         <Card className="p-5">
@@ -388,6 +420,28 @@ export function TimerPage() {
             <Button variant="ghost" onClick={discardPartialSave} className="gap-2">
               <X size={16} />
               Discard
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal open={showModeConfirm} onClose={cancelModeSwitch} title="Switch Timer Mode?" size="sm">
+        <div className="text-center py-4">
+          <div className="w-14 h-14 rounded-full bg-amber-100 dark:bg-amber-900/30 mx-auto mb-4 flex items-center justify-center">
+            <RotateCcw className="h-7 w-7 text-amber-600" />
+          </div>
+          <p className="text-text-primary font-medium mb-1">
+            Your current timer progress will be lost
+          </p>
+          <p className="text-sm text-text-tertiary mb-6">
+            Switching modes will reset the timer to the new duration.
+          </p>
+          <div className="flex gap-3 justify-center">
+            <Button onClick={confirmModeSwitch}>
+              Switch Mode
+            </Button>
+            <Button variant="ghost" onClick={cancelModeSwitch}>
+              Cancel
             </Button>
           </div>
         </div>

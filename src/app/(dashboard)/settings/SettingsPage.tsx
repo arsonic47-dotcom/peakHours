@@ -41,11 +41,18 @@ export function SettingsPage() {
       return;
     }
 
+    const parsedTargetHours = parseInt(targetHours);
+    if (isNaN(parsedTargetHours) || parsedTargetHours <= 0) {
+      showToast("Target hours must be a positive number", "error");
+      setLoading(false);
+      return;
+    }
+
     const { error } = await supabase
       .from("profiles")
       .update({
         display_name: name,
-        target_hours: parseInt(targetHours) || 2500,
+        target_hours: parsedTargetHours,
         updated_at: new Date().toISOString(),
       })
       .eq("id", user.id);

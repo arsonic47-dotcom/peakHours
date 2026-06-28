@@ -87,7 +87,7 @@ export function computeInsights(sessions: StudySession[], targetHours: number): 
 
   const dates = [...new Set(sorted.map((s) => new Date(s.started_at).toISOString().split("T")[0]))];
   const totalDays = dates.length;
-  const avgDaily = totalMinutes / 60 / totalDays;
+  const avgDaily = totalDays > 0 ? totalMinutes / 60 / totalDays : 0;
   insights.push({
     id: "avg-daily",
     icon: "trending",

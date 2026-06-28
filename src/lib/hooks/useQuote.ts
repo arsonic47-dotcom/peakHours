@@ -33,12 +33,8 @@ export function useQuote(): { quote: Quote; loading: boolean } {
     let cancelled = false;
 
     const pick = randomFallback();
-    queueMicrotask(() => {
-      if (!cancelled) {
-        setQuote(pick);
-        setLoading(false);
-      }
-    });
+    setQuote(pick);
+    setLoading(false);
 
     fetch("https://dummyjson.com/quotes/random")
       .then((res) => res.json())

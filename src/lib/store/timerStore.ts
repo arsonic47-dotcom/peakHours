@@ -57,14 +57,14 @@ export const useTimerStore = create<TimerState>((set, get) => ({
   setMode: (mode) => {
     get().clearTimer();
     const config = MODE_CONFIGS[mode];
-    set({ mode, config, timeLeft: config.work * 60, isRunning: false, isBreak: false, completedMinutes: 0, completed: false, lastCompletedPhase: null });
+    set({ mode, config, timeLeft: config.work * 60, isRunning: false, isBreak: false, completed: false, lastCompletedPhase: null });
   },
 
   setCustomConfig: (work, breakMinutes) => {
     get().clearTimer();
     const config = { work, break: breakMinutes };
     MODE_CONFIGS.custom = config;
-    set({ config, timeLeft: work * 60, isRunning: false, isBreak: false, completedMinutes: 0, completed: false, lastCompletedPhase: null });
+    set({ config, timeLeft: work * 60, isRunning: false, isBreak: false, completed: false, lastCompletedPhase: null });
   },
 
   start: () => {
