@@ -8,11 +8,13 @@ import { Card, CardTitle, CardDescription } from "@/components/ui/Card";
 import { Skeleton } from "@/components/ui/Skeleton";
 import {
   Lightbulb, Calendar, Clock, Moon, TrendingUp, Target, Trophy,
+  Flame, Mountain, Brain,
 } from "lucide-react";
 
 const iconMap: Record<string, React.FC<any>> = {
   lightbulb: Lightbulb, calendar: Calendar, clock: Clock,
   moon: Moon, trending: TrendingUp, target: Target, trophy: Trophy,
+  flame: Flame, mountain: Mountain, brain: Brain,
 };
 
 export function InsightsPage() {
