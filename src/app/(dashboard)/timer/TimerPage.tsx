@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useTimerStore, formatTimerTime } from "@/lib/store/timerStore";
 import { useSessionStore } from "@/lib/store/sessionStore";
 import { useUIStore } from "@/lib/store/uiStore";
@@ -22,9 +22,11 @@ import {
   Sparkles,
   Save,
   X,
+  PictureInPicture2,
 } from "lucide-react";
 import { useQuote } from "@/lib/hooks/useQuote";
 import { useNotifications } from "@/lib/hooks/useNotifications";
+import { useFloatingTimer } from "@/lib/hooks/useFloatingTimer";
 import { motion } from "framer-motion";
 
 const MODES = [
@@ -136,6 +138,27 @@ export function TimerPage() {
     if (pendingAction === "stop") stop();
     else reset();
   };
+
+  const floatingTimer = useFloatingTimer();
+  const handlePartialStopRef = useRef(handlePartialStop);
+  handlePartialStopRef.current = handlePartialStop;
+
+  useEffect(() => {
+    const handler = (e: MessageEvent) => {
+      if (e.data === "pip-pause") {
+        const s = useTimerStore.getState();
+        if (s.isRunning) s.pause();
+        else s.resume();
+      } else if (e.data === "pip-stop") {
+        handlePartialStopRef.current();
+      } else if (e.data === "pip-focus") {
+        window.focus();
+        floatingTimer.close();
+      }
+    };
+    window.addEventListener("message", handler);
+    return () => window.removeEventListener("message", handler);
+  }, [floatingTimer.close]);
 
   return (
     <div className="animate-fade-in">
@@ -258,6 +281,28 @@ export function TimerPage() {
             <RotateCcw size={18} />
             Reset
           </Button>
+        </div>
+
+        <div className="flex items-center justify-center -mt-4 mb-8">
+          <button
+            onClick={() => {
+              if (!floatingTimer.isSupported) {
+                showToast("Picture-in-Picture is not supported in this browser", "info");
+                return;
+              }
+              if (floatingTimer.isOpen) floatingTimer.close();
+              else floatingTimer.open();
+            }}
+            className={cn(
+              "flex items-center gap-1.5 text-xs font-medium transition-colors rounded-lg px-3 py-1.5",
+              floatingTimer.isOpen
+                ? "bg-primary-600 text-white"
+                : "text-text-tertiary hover:text-text-primary hover:bg-surface-secondary"
+            )}
+          >
+            <PictureInPicture2 size={14} />
+            {floatingTimer.isOpen ? "Floating Timer" : "Pop Out Timer"}
+          </button>
         </div>
 
         <Card className="p-5">
