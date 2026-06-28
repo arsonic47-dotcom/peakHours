@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -40,6 +41,12 @@ export function Sidebar() {
   const router = useRouter();
   const { sidebarOpen, setSidebarOpen } = useUIStore();
 
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.innerWidth < 1024) {
+      setSidebarOpen(false);
+    }
+  }, [setSidebarOpen]);
+
   const handleSignOut = async () => {
     const supabase = createClient();
     const { error } = await supabase.auth.signOut();
@@ -49,12 +56,15 @@ export function Sidebar() {
   };
 
   return (
-    <aside
-      className={cn(
-        "fixed left-0 top-0 z-40 flex h-screen flex-col bg-surface border-r border-border transition-all duration-300",
-        sidebarOpen ? "w-64" : "w-16"
-      )}
-    >
+    <>
+      <aside
+        className={cn(
+          "fixed left-0 top-0 z-40 flex h-screen flex-col bg-surface border-r border-border transition-all duration-300",
+          sidebarOpen
+            ? "translate-x-0 w-64"
+            : "max-lg:-translate-x-full lg:translate-x-0 lg:w-16"
+        )}
+      >
       <div className={cn("flex items-center h-16 px-4 border-b border-border", sidebarOpen ? "justify-between" : "justify-center")}>
         {sidebarOpen && (
           <Link href="/dashboard" className="flex items-center gap-2">
@@ -114,6 +124,14 @@ export function Sidebar() {
           {sidebarOpen && <span>Sign Out</span>}
         </button>
       </div>
-    </aside>
+      </aside>
+
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+    </>
   );
 }

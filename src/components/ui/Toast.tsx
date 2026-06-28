@@ -29,7 +29,7 @@ export function Toaster() {
   }, [toast, hideToast]);
 
   return (
-    <div className="fixed bottom-6 right-6 z-[100]">
+    <div className="fixed bottom-6 right-6 z-[100] max-w-[calc(100vw-2rem)] max-sm:right-3 max-sm:bottom-3">
       <AnimatePresence>
         {toast && (
           <motion.div
@@ -37,7 +37,7 @@ export function Toaster() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             className={cn(
-              "flex items-center gap-3 rounded-2xl border px-5 py-3.5 shadow-lg min-w-[300px]",
+              "flex items-center gap-3 rounded-2xl border px-5 py-3.5 shadow-lg min-w-[300px] max-sm:min-w-0 max-sm:w-full max-sm:px-4 max-sm:py-3",
               colors[toast.type]
             )}
           >

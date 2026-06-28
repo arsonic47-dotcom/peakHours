@@ -77,7 +77,7 @@ export function FocusDistribution({ sessions }: FocusDistributionProps) {
                         style={{ width: `${Math.max(pct, 1)}%` }}
                       />
                     </div>
-                    <span className="w-10 text-[10px] text-text-tertiary text-left shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className="w-10 text-[10px] text-text-tertiary text-left shrink-0 opacity-0 group-hover:opacity-100 max-sm:opacity-100 transition-opacity">
                       {d.minutes > 0 ? `${hours}h` : ""}
                     </span>
                   </div>

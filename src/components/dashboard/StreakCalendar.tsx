@@ -147,16 +147,16 @@ export function StreakCalendar({ sessions }: StreakCalendarProps) {
               ))}
             </div>
 
-            <div className="flex gap-0.5">
+            <div className="flex gap-0.5 max-sm:gap-1">
               {weeks.map((week, wi) => (
-                <div key={wi} className="flex flex-col gap-0.5">
+                <div key={wi} className="flex flex-col gap-0.5 max-sm:gap-1">
                   {week.map((day, di) =>
                     day === null ? (
-                      <div key={`${wi}-${di}`} className="w-3 h-3" />
+                      <div key={`${wi}-${di}`} className="w-3 h-3 max-sm:w-4 max-sm:h-4" />
                     ) : (
                       <div
                         key={`${wi}-${di}`}
-                        className={`w-3 h-3 rounded-sm cursor-pointer transition-colors duration-150 ${getColor(day.minutes, maxMinutes)}`}
+                        className={`w-3 h-3 max-sm:w-4 max-sm:h-4 rounded-sm cursor-pointer transition-colors duration-150 ${getColor(day.minutes, maxMinutes)}`}
                         onMouseEnter={(e) => handleMouseEnter(day, e)}
                         onMouseLeave={handleMouseLeave}
                         onClick={() => router.push(`/journal?date=${day.dateKey}`)}

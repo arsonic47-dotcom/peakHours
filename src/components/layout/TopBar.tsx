@@ -25,7 +25,7 @@ export function TopBar() {
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-border bg-surface/80 backdrop-blur-lg px-6">
       <button
         onClick={() => setSidebarOpen(true)}
-        className="rounded-lg p-1.5 text-text-tertiary hover:bg-surface-tertiary hover:text-text-primary transition-colors lg:hidden"
+        className="rounded-lg p-1.5 max-sm:p-2.5 text-text-tertiary hover:bg-surface-tertiary hover:text-text-primary transition-colors lg:hidden"
       >
         <Menu size={20} />
       </button>

@@ -293,7 +293,7 @@ export function JournalPage({ initialDate }: { initialDate?: string }) {
               key={f.id}
               onClick={() => setFilterType(f.id)}
               className={cn(
-                "rounded-lg px-3.5 py-1.5 text-xs font-medium transition-all",
+                "rounded-lg px-3.5 py-1.5 text-xs font-medium transition-all max-sm:py-2.5",
                 filterType === f.id
                   ? "bg-surface text-text-primary shadow-sm"
                   : "text-text-secondary hover:text-text-primary"

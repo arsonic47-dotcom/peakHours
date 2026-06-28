@@ -217,13 +217,13 @@ export function TimerPage() {
       </div>
 
       <div className="max-w-lg mx-auto">
-        <div className="flex items-center justify-center gap-2 mb-8 bg-surface-secondary rounded-2xl p-1.5 border border-border">
+        <div className="flex items-center justify-center gap-2 mb-8 bg-surface-secondary rounded-2xl p-1.5 border border-border flex-wrap">
           {MODES.map((m) => (
             <button
               key={m.id}
               onClick={() => handleModeSwitch(m.id)}
               className={cn(
-                "rounded-xl px-5 py-2.5 text-sm font-medium transition-all duration-200",
+                "rounded-xl px-5 py-2.5 text-sm font-medium transition-all duration-200 max-sm:px-3 max-sm:py-2 max-sm:text-xs",
                 mode === m.id
                   ? "bg-surface text-text-primary shadow-sm"
                   : "text-text-secondary hover:text-text-primary"
@@ -291,7 +291,7 @@ export function TimerPage() {
 
         {mode === "custom" && (
           <div className="mb-6 p-4 rounded-xl bg-surface-secondary border border-border">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 max-sm:flex-col max-sm:gap-3">
               <div className="flex-1">
                 <label className="block text-xs font-medium text-text-secondary mb-1">Work (min)</label>
                 <input
@@ -360,9 +360,9 @@ export function TimerPage() {
           </div>
         </div>
 
-        <div className="flex items-center justify-center gap-3 mb-8">
+        <div className="flex items-center justify-center gap-3 mb-8 flex-wrap">
           {!isRunning ? (
-            <Button size="xl" onClick={() => { requestPermission(); initAudio(); start(); }} className="gap-2 min-w-[140px]">
+            <Button size="xl" onClick={() => { requestPermission(); initAudio(); start(); }} className="gap-2 min-w-[140px] max-sm:min-w-[120px]">
               <Play size={20} />
               {timeLeft === config.work * 60 && !isBreak ? "Start" : "Resume"}
             </Button>

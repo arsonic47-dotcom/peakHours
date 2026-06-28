@@ -42,7 +42,7 @@ export default function Home() {
             Track your focus time, climb a beautiful 3D mountain, unlock achievements,
             and build discipline — one hour at a time.
           </p>
-          <div className="flex items-center justify-center gap-4">
+          <div className="flex items-center justify-center gap-4 flex-wrap max-sm:flex-col max-sm:w-full max-sm:px-4">
             <Link
               href="/signup"
               className="inline-flex items-center gap-2 rounded-2xl bg-primary-600 px-8 py-4 text-lg font-semibold text-white hover:bg-primary-700 transition-all shadow-lg hover:shadow-xl active:scale-[0.98]"
