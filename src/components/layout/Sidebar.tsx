@@ -13,12 +13,12 @@ import {
   Trophy,
   Lightbulb,
   ScrollText,
-  User,
   Settings,
   ChevronLeft,
   ChevronRight,
   LogOut,
-  Sparkles,
+  Users,
+  Medal,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
@@ -28,6 +28,8 @@ const navItems = [
   { href: "/timer", label: "Focus Timer", icon: Timer },
   { href: "/journal", label: "Journey Journal", icon: BookOpen },
   { href: "/calendar", label: "Calendar", icon: Calendar },
+  { href: "/friends", label: "Friends", icon: Users },
+  { href: "/rankings", label: "Rankings", icon: Medal },
   { href: "/records", label: "Records", icon: Trophy },
   { href: "/insights", label: "Insights", icon: Lightbulb },
   { href: "/review", label: "Year Review", icon: ScrollText },
