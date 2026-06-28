@@ -36,12 +36,12 @@ export function useQuote(): { quote: Quote; loading: boolean } {
     setQuote(pick);
     setLoading(false);
 
-    fetch("https://api.quotable.io/random")
+    fetch("/api/quote")
       .then((res) => res.json())
       .then((data) => {
         if (cancelled) return;
-        if (data?.content && data?.author) {
-          setQuote({ text: data.content, author: data.author });
+        if (data?.text && data?.author) {
+          setQuote({ text: data.text, author: data.author });
         }
       })
       .catch(() => {});
