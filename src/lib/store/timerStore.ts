@@ -22,6 +22,7 @@ interface TimerState {
   isBreak: boolean;
   completedMinutes: number;
   completed: boolean;
+  lastCompletedPhase: "work" | "break" | null;
   intervalId: ReturnType<typeof setInterval> | null;
 
   setMode: (mode: TimerMode) => void;
@@ -42,6 +43,7 @@ export const useTimerStore = create<TimerState>((set, get) => ({
   isBreak: false,
   completedMinutes: 0,
   completed: false,
+  lastCompletedPhase: null,
   intervalId: null,
 
   clearTimer: () => {
@@ -55,14 +57,14 @@ export const useTimerStore = create<TimerState>((set, get) => ({
   setMode: (mode) => {
     get().clearTimer();
     const config = MODE_CONFIGS[mode];
-    set({ mode, config, timeLeft: config.work * 60, isRunning: false, isBreak: false, completedMinutes: 0, completed: false });
+    set({ mode, config, timeLeft: config.work * 60, isRunning: false, isBreak: false, completedMinutes: 0, completed: false, lastCompletedPhase: null });
   },
 
   setCustomConfig: (work, breakMinutes) => {
     get().clearTimer();
     const config = { work, break: breakMinutes };
     MODE_CONFIGS.custom = config;
-    set({ config, timeLeft: work * 60, isRunning: false, isBreak: false, completedMinutes: 0, completed: false });
+    set({ config, timeLeft: work * 60, isRunning: false, isBreak: false, completedMinutes: 0, completed: false, lastCompletedPhase: null });
   },
 
   start: () => {
@@ -81,6 +83,7 @@ export const useTimerStore = create<TimerState>((set, get) => ({
             isBreak: false,
             completed: true,
             completedMinutes: current.completedMinutes,
+            lastCompletedPhase: "break",
           });
         } else {
           set({
@@ -89,6 +92,7 @@ export const useTimerStore = create<TimerState>((set, get) => ({
             timeLeft: current.config.break * 60,
             completed: true,
             completedMinutes: current.completedMinutes + current.config.work,
+            lastCompletedPhase: "work",
           });
         }
         return;
@@ -112,13 +116,13 @@ export const useTimerStore = create<TimerState>((set, get) => ({
   stop: () => {
     get().clearTimer();
     const config = get().config;
-    set({ isRunning: false, timeLeft: config.work * 60, isBreak: false, completed: false });
+    set({ isRunning: false, timeLeft: config.work * 60, isBreak: false, completed: false, lastCompletedPhase: null });
   },
 
   reset: () => {
     get().clearTimer();
     const config = get().config;
-    set({ isRunning: false, timeLeft: config.work * 60, isBreak: false, completedMinutes: 0, completed: false });
+    set({ isRunning: false, timeLeft: config.work * 60, isBreak: false, completedMinutes: 0, completed: false, lastCompletedPhase: null });
   },
 }));
 

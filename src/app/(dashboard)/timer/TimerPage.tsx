@@ -24,6 +24,7 @@ import {
   X,
 } from "lucide-react";
 import { useQuote } from "@/lib/hooks/useQuote";
+import { useNotifications } from "@/lib/hooks/useNotifications";
 import { motion } from "framer-motion";
 
 const MODES = [
@@ -50,6 +51,7 @@ export function TimerPage() {
   const [customWork, setCustomWork] = useState("25");
   const [customBreak, setCustomBreak] = useState("5");
   const { quote } = useQuote();
+  const { requestPermission, notify } = useNotifications();
 
   const autoSaveSession = useCallback(async (minutes: number) => {
     if (minutes <= 0) return;
@@ -79,20 +81,17 @@ export function TimerPage() {
 
   useEffect(() => {
     const unsub = useTimerStore.subscribe((state) => {
-      if (state.completed) {
+      if (state.completed && state.lastCompletedPhase === "work") {
         setShowComplete(true);
-        if (state.isBreak) {
-          autoSaveSession(state.config.work);
-        }
-        try {
-          const audio = new Audio("/sounds/complete.mp3");
-          audio.volume = 0.3;
-          audio.play().catch(() => {});
-        } catch {}
+        autoSaveSession(state.config.work);
+        notify("Focus Complete", `${state.config.work} minute session saved`, "/sounds/complete.mp3");
+      } else if (state.completed && state.lastCompletedPhase === "break") {
+        setShowComplete(true);
+        notify("Break Over", "Time to focus!", "/sounds/break.mp3");
       }
     });
     return () => unsub();
-  }, [autoSaveSession]);
+  }, [autoSaveSession, notify]);
 
   const pct = isBreak
     ? ((config.break * 60 - timeLeft) / (config.break * 60)) * 100
@@ -239,7 +238,7 @@ export function TimerPage() {
 
         <div className="flex items-center justify-center gap-3 mb-8">
           {!isRunning ? (
-            <Button size="xl" onClick={start} className="gap-2 min-w-[140px]">
+            <Button size="xl" onClick={() => { requestPermission(); start(); }} className="gap-2 min-w-[140px]">
               <Play size={20} />
               {timeLeft === config.work * 60 && !isBreak ? "Start" : "Resume"}
             </Button>

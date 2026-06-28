@@ -27,6 +27,7 @@ import {
   Quote,
   X,
   ChevronDown,
+  Calendar,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -135,7 +136,7 @@ function detectMilestones(sessions: any[], profile: any): JournalItem[] {
   return items;
 }
 
-export function JournalPage() {
+export function JournalPage({ initialDate }: { initialDate?: string }) {
   const supabase = createClient();
   const { sessions } = useSessionStore();
   const { showToast } = useUIStore();
@@ -144,6 +145,7 @@ export function JournalPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState<"all" | "milestone" | "manual">("all");
+  const [dateFilter, setDateFilter] = useState(initialDate || "");
   const [showNewEntry, setShowNewEntry] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newContent, setNewContent] = useState("");
@@ -192,6 +194,10 @@ export function JournalPage() {
   const filtered = allEntries.filter((entry) => {
     if (filterType === "milestone" && entry.type !== "auto_milestone") return false;
     if (filterType === "manual" && entry.type !== "manual") return false;
+    if (dateFilter) {
+      const entryDate = entry.date.slice(0, 10);
+      if (entryDate !== dateFilter) return false;
+    }
     if (search) {
       const q = search.toLowerCase();
       return (
@@ -298,6 +304,27 @@ export function JournalPage() {
           ))}
         </div>
       </div>
+
+      {dateFilter && (
+        <div className="flex items-center gap-2 mb-4">
+          <Badge variant="primary" className="gap-1.5">
+            <Calendar size={12} />
+            {(() => {
+              const d = new Date(dateFilter + "T00:00:00");
+              return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+            })()}
+            <button
+              onClick={() => setDateFilter("")}
+              className="ml-1 hover:text-primary-200 transition-colors"
+            >
+              <X size={12} />
+            </button>
+          </Badge>
+          <span className="text-xs text-text-tertiary">
+            {filtered.length} {filtered.length === 1 ? "entry" : "entries"}
+          </span>
+        </div>
+      )}
 
       {filtered.length === 0 ? (
         <div className="text-center py-20">
