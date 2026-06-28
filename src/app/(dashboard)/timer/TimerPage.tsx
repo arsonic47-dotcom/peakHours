@@ -4,11 +4,13 @@ import { useEffect, useState, useCallback } from "react";
 import { useTimerStore, formatTimerTime } from "@/lib/store/timerStore";
 import { useSessionStore } from "@/lib/store/sessionStore";
 import { useUIStore } from "@/lib/store/uiStore";
+import { usePresetStore } from "@/lib/store/presetStore";
 import { createClient } from "@/lib/supabase/client";
 import { Card, CardTitle, CardDescription } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { Badge } from "@/components/ui/Badge";
+import { Input } from "@/components/ui/Input";
 import { cn } from "@/lib/utils/cn";
 import {
   Play,
@@ -23,6 +25,8 @@ import {
   Save,
   X,
   PictureInPicture2,
+  Bookmark,
+  Trash2,
 } from "lucide-react";
 import { useQuote } from "@/lib/hooks/useQuote";
 import { useNotifications } from "@/lib/hooks/useNotifications";
@@ -43,6 +47,7 @@ export function TimerPage() {
   } = useTimerStore();
   const { sessions, addSession } = useSessionStore();
   const { showToast } = useUIStore();
+  const { presets, addPreset, deletePreset } = usePresetStore();
   const supabase = createClient();
 
   const [showComplete, setShowComplete] = useState(false);
@@ -54,6 +59,8 @@ export function TimerPage() {
   const [customBreak, setCustomBreak] = useState("5");
   const [showModeConfirm, setShowModeConfirm] = useState(false);
   const [pendingMode, setPendingMode] = useState<typeof mode | null>(null);
+  const [showSavePreset, setShowSavePreset] = useState(false);
+  const [presetName, setPresetName] = useState("");
   const { quote } = useQuote();
   const { requestPermission, notify, initAudio } = useNotifications();
 
@@ -166,6 +173,29 @@ export function TimerPage() {
     setPendingMode(null);
   };
 
+  const handleSavePreset = () => {
+    if (!presetName.trim()) {
+      showToast("Please enter a preset name", "error");
+      return;
+    }
+    addPreset({
+      name: presetName.trim(),
+      work: config.work,
+      break: config.break,
+    });
+    setShowSavePreset(false);
+    setPresetName("");
+    showToast("Preset saved!", "success");
+  };
+
+  const handleApplyPreset = (preset: { work: number; break: number }) => {
+    setCustomConfig(preset.work, preset.break);
+    setMode("custom");
+    setShowCustomForm(true);
+    setCustomWork(preset.work.toString());
+    setCustomBreak(preset.break.toString());
+  };
+
   const handleFloatingToggle = useCallback(() => {
     const s = useTimerStore.getState();
     if (s.isRunning) {
@@ -207,6 +237,61 @@ export function TimerPage() {
             </button>
           ))}
         </div>
+
+        {presets.length > 0 && (
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Your Presets</p>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setShowSavePreset(true)}
+                className="gap-1.5 text-xs"
+              >
+                <Bookmark size={12} />
+                Save Current
+              </Button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {presets.map((preset) => (
+                <div
+                  key={preset.id}
+                  className="flex items-center gap-1 bg-surface-secondary border border-border rounded-lg px-3 py-1.5 group"
+                >
+                  <button
+                    onClick={() => handleApplyPreset(preset)}
+                    className="text-sm font-medium text-text-primary hover:text-primary-600 transition-colors"
+                  >
+                    {preset.name}
+                  </button>
+                  <span className="text-xs text-text-tertiary">
+                    {preset.work}/{preset.break}
+                  </span>
+                  <button
+                    onClick={() => deletePreset(preset.id)}
+                    className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-surface-tertiary text-text-tertiary hover:text-error transition-all"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {presets.length === 0 && (
+          <div className="mb-6 flex justify-center">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setShowSavePreset(true)}
+              className="gap-1.5 text-xs text-text-tertiary"
+            >
+              <Bookmark size={12} />
+              Save current timer as preset
+            </Button>
+          </div>
+        )}
 
         {mode === "custom" && (
           <div className="mb-6 p-4 rounded-xl bg-surface-secondary border border-border">
@@ -442,6 +527,26 @@ export function TimerPage() {
             </Button>
             <Button variant="ghost" onClick={cancelModeSwitch}>
               Cancel
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal open={showSavePreset} onClose={() => setShowSavePreset(false)} title="Save Timer Preset" size="sm">
+        <div className="space-y-4">
+          <Input
+            id="preset-name"
+            label="Preset Name"
+            placeholder="e.g. Deep Work, Quick Review..."
+            value={presetName}
+            onChange={(e) => setPresetName(e.target.value)}
+          />
+          <div className="flex gap-3">
+            <Button variant="secondary" className="flex-1" onClick={() => setShowSavePreset(false)}>
+              Cancel
+            </Button>
+            <Button className="flex-1" onClick={handleSavePreset}>
+              Save Preset
             </Button>
           </div>
         </div>

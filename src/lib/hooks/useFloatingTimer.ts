@@ -36,7 +36,7 @@ body{
   height:100%;
   min-height:206px;
   display:grid;
-  grid-template-rows:auto auto auto auto 1fr auto;
+  grid-template-rows:auto auto auto 1fr auto;
   align-content:center;
   gap:10px;
   padding:16px;
@@ -46,28 +46,6 @@ body{
     radial-gradient(circle at 20% 0%, rgba(59,130,246,.34), transparent 35%),
     linear-gradient(145deg, #0f172a 0%, #111827 52%, #08111f 100%);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 18px 45px rgba(0,0,0,.28);
-}
-.topline{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:7px;
-  color:#cbd5e1;
-  font-size:11px;
-  font-weight:700;
-  letter-spacing:.3px;
-  text-transform:uppercase;
-}
-.status-dot{
-  width:8px;
-  height:8px;
-  border-radius:999px;
-  background:#22c55e;
-  box-shadow:0 0 14px rgba(34,197,94,.7);
-}
-.status-dot.paused{
-  background:#f59e0b;
-  box-shadow:0 0 14px rgba(245,158,11,.58);
 }
 .timer{
   color:#ffffff;
@@ -133,22 +111,10 @@ body{
 .btn:active{transform:scale(.98)}
 .btn.primary{background:#2563eb;color:#fff;box-shadow:0 10px 20px rgba(37,99,235,.26)}
 .btn.danger{background:rgba(248,113,113,.13);color:#fecaca;border:1px solid rgba(248,113,113,.22)}
-.back{
-  justify-self:center;
-  color:#93c5fd;
-  font-size:11px;
-  cursor:pointer;
-  border:none;
-  background:none;
-  font-family:inherit;
-  font-weight:700;
-}
-.back:hover{color:#dbeafe}
 </style>
 </head>
 <body>
 <main class="shell" aria-label="Floating focus timer">
-  <div class="topline"><span class="status-dot" id="pe-dot"></span><span id="pe-state">Paused</span></div>
   <div class="timer" id="pe-timer">25:00</div>
   <div class="phase-row">
     <span class="phase" id="pe-phase">Focus Time</span>
@@ -159,7 +125,6 @@ body{
     <button class="btn primary" id="pe-pause" type="button">Resume</button>
     <button class="btn danger" id="pe-stop" type="button">Stop</button>
   </div>
-  <button class="back" id="pe-back" type="button">Back to timer</button>
 </main>
 </body>
 </html>`;
@@ -190,9 +155,7 @@ export function useFloatingTimer(actions: FloatingTimerActions = {}) {
     const phase = doc.getElementById("pe-phase");
     const badge = doc.getElementById("pe-badge");
     const pause = doc.getElementById("pe-pause");
-    const stateLabel = doc.getElementById("pe-state");
     const progress = doc.getElementById("pe-progress");
-    const dot = doc.getElementById("pe-dot");
     const duration = (state.isBreak ? state.config.break : state.config.work) * 60;
     const elapsed = Math.max(0, duration - state.timeLeft);
     const progressPct = duration > 0 ? Math.min(100, Math.round((elapsed / duration) * 100)) : 0;
@@ -201,9 +164,7 @@ export function useFloatingTimer(actions: FloatingTimerActions = {}) {
     if (phase) phase.textContent = state.isBreak ? "Break Time" : "Focus Time";
     if (badge) badge.textContent = MODE_MAP[state.mode] || state.mode;
     if (pause) pause.textContent = state.isRunning ? "Pause" : "Resume";
-    if (stateLabel) stateLabel.textContent = state.isRunning ? "Running" : "Paused";
     if (progress) progress.style.width = `${progressPct}%`;
-    if (dot) dot.classList.toggle("paused", !state.isRunning);
   }, []);
 
   const stopPolling = useCallback(() => {
@@ -252,10 +213,6 @@ export function useFloatingTimer(actions: FloatingTimerActions = {}) {
         window.focus();
         actionsRef.current.onStop?.();
         render();
-      });
-      pip.document.getElementById("pe-back")?.addEventListener("click", () => {
-        window.focus();
-        pip.close();
       });
 
       startPolling();

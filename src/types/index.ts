@@ -36,6 +36,13 @@ export interface TimerConfig {
   break: number;
 }
 
+export interface TimerPreset {
+  id: string;
+  name: string;
+  work: number;
+  break: number;
+}
+
 export interface JournalEntry {
   id: string;
   user_id: string;
