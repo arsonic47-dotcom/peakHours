@@ -51,7 +51,7 @@ export function TimerPage() {
   const [customWork, setCustomWork] = useState("25");
   const [customBreak, setCustomBreak] = useState("5");
   const { quote } = useQuote();
-  const { requestPermission, notify } = useNotifications();
+  const { requestPermission, notify, initAudio } = useNotifications();
 
   const autoSaveSession = useCallback(async (minutes: number) => {
     if (minutes <= 0) return;
@@ -238,7 +238,7 @@ export function TimerPage() {
 
         <div className="flex items-center justify-center gap-3 mb-8">
           {!isRunning ? (
-            <Button size="xl" onClick={() => { requestPermission(); start(); }} className="gap-2 min-w-[140px]">
+            <Button size="xl" onClick={() => { requestPermission(); initAudio(); start(); }} className="gap-2 min-w-[140px]">
               <Play size={20} />
               {timeLeft === config.work * 60 && !isBreak ? "Start" : "Resume"}
             </Button>

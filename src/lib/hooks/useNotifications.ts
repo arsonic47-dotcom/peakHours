@@ -6,6 +6,18 @@ const PERM_KEY = "peakhours-notification-permission";
 
 export function useNotifications() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const unlockedRef = useRef(false);
+
+  const initAudio = useCallback(() => {
+    if (unlockedRef.current) return;
+    try {
+      const a = new Audio();
+      a.volume = 0.3;
+      a.play().then(() => { a.pause(); a.currentTime = 0; }).catch(() => {});
+      audioRef.current = a;
+      unlockedRef.current = true;
+    } catch {}
+  }, []);
 
   const requestPermission = useCallback(async () => {
     if (typeof window === "undefined" || !("Notification" in window)) return;
@@ -47,5 +59,5 @@ export function useNotifications() {
     []
   );
 
-  return { requestPermission, notify };
+  return { requestPermission, notify, initAudio };
 }
