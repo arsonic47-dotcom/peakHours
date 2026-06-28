@@ -64,6 +64,8 @@ export function useNotifications() {
       currentAudioRef.current.currentTime = 0;
       currentAudioRef.current = null;
     }
+    onEndRef.current?.();
+    onEndRef.current = undefined;
   }, []);
 
   const playUrl = useCallback((url: string) => {
