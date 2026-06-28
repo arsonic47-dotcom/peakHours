@@ -58,10 +58,10 @@ body{
 <div class="phase" id="pe-phase">Focus Time</div>
 <div class="badge" id="pe-badge">Pomodoro</div>
 <div class="controls">
-<button class="btn btn-pause" id="pe-pause" onclick="opener.postMessage('pip-pause','*')">⏸ Pause</button>
-<button class="btn" onclick="opener.postMessage('pip-stop','*')">⏹ Stop</button>
+<button class="btn btn-pause" id="pe-pause">⏸ Pause</button>
+<button class="btn" id="pe-stop">⏹ Stop</button>
 </div>
-<button class="back" onclick="opener.postMessage('pip-focus','*')">↗ Back to Timer</button>
+<button class="back" id="pe-back">↗ Back to Timer</button>
 </body>
 </html>`;
 
@@ -130,6 +130,15 @@ export function useFloatingTimer() {
       pip.document.write(PIP_HTML);
       pip.document.close();
 
+      const attach = (id: string, msg: string) => {
+        pip.document.getElementById(id)?.addEventListener("click", () => {
+          pip.postMessage(msg, window.location.origin);
+        });
+      };
+      attach("pe-pause", "pip-pause");
+      attach("pe-stop", "pip-stop");
+      attach("pe-back", "pip-focus");
+
       startPolling();
 
       pip.addEventListener("pagehide", () => {
@@ -156,5 +165,5 @@ export function useFloatingTimer() {
     return () => close();
   }, [close]);
 
-  return { open, close, isOpen, isSupported };
+  return { open, close, isOpen, isSupported, pipWindow: pipRef };
 }

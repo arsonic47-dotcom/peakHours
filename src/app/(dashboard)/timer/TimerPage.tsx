@@ -145,10 +145,16 @@ export function TimerPage() {
 
   useEffect(() => {
     const handler = (e: MessageEvent) => {
+      if (e.origin !== window.location.origin) return;
+      if (e.source !== floatingTimer.pipWindow.current) return;
       if (e.data === "pip-pause") {
         const s = useTimerStore.getState();
         if (s.isRunning) s.pause();
-        else s.resume();
+        else {
+          requestPermission();
+          initAudio();
+          s.resume();
+        }
       } else if (e.data === "pip-stop") {
         handlePartialStopRef.current();
       } else if (e.data === "pip-focus") {
@@ -158,7 +164,7 @@ export function TimerPage() {
     };
     window.addEventListener("message", handler);
     return () => window.removeEventListener("message", handler);
-  }, [floatingTimer.close]);
+  }, [floatingTimer.close, floatingTimer.pipWindow, requestPermission, initAudio]);
 
   return (
     <div className="animate-fade-in">
@@ -285,6 +291,7 @@ export function TimerPage() {
 
         <div className="flex items-center justify-center -mt-4 mb-8">
           <button
+            disabled={!isRunning && !isBreak && timeLeft === config.work * 60}
             onClick={() => {
               if (!floatingTimer.isSupported) {
                 showToast("Picture-in-Picture is not supported in this browser", "info");
@@ -295,9 +302,11 @@ export function TimerPage() {
             }}
             className={cn(
               "flex items-center gap-1.5 text-xs font-medium transition-colors rounded-lg px-3 py-1.5",
-              floatingTimer.isOpen
-                ? "bg-primary-600 text-white"
-                : "text-text-tertiary hover:text-text-primary hover:bg-surface-secondary"
+              !floatingTimer.isSupported || (!isRunning && !isBreak && timeLeft === config.work * 60)
+                ? "opacity-40 cursor-not-allowed"
+                : floatingTimer.isOpen
+                  ? "bg-primary-600 text-white"
+                  : "text-text-tertiary hover:text-text-primary hover:bg-surface-secondary"
             )}
           >
             <PictureInPicture2 size={14} />
