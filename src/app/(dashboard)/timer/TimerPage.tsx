@@ -87,10 +87,6 @@ export function TimerPage() {
   }, [supabase, addSession, showToast, mode]);
 
   useEffect(() => {
-    return () => clearTimer();
-  }, [clearTimer]);
-
-  useEffect(() => {
     const unsub = useTimerStore.subscribe((state) => {
       if (state.completed && state.lastCompletedPhase === "work") {
         setShowComplete(true);
