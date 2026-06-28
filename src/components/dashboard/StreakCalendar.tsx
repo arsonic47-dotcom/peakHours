@@ -15,11 +15,11 @@ interface DayData {
 }
 
 const COLORS = [
-  "bg-primary-50 dark:bg-primary-950",
-  "bg-primary-200 dark:bg-primary-800",
+  "bg-primary-50 dark:bg-primary-200",
+  "bg-primary-200 dark:bg-primary-400",
   "bg-primary-400 dark:bg-primary-600",
-  "bg-primary-600 dark:bg-primary-400",
-  "bg-primary-800 dark:bg-primary-200",
+  "bg-primary-600 dark:bg-primary-700",
+  "bg-primary-800 dark:bg-primary-900",
 ];
 
 const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
