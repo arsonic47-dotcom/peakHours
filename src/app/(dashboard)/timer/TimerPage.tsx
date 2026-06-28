@@ -27,6 +27,8 @@ import {
   PictureInPicture2,
   Bookmark,
   Trash2,
+  VolumeX,
+  Volume2,
 } from "lucide-react";
 import { useQuote } from "@/lib/hooks/useQuote";
 import { useNotifications } from "@/lib/hooks/useNotifications";
@@ -62,7 +64,7 @@ export function TimerPage() {
   const [showSavePreset, setShowSavePreset] = useState(false);
   const [presetName, setPresetName] = useState("");
   const { quote } = useQuote();
-  const { requestPermission, notify, initAudio } = useNotifications();
+  const { requestPermission, notify, initAudio, stopSound, volume: notifVolume, setVolume: setNotifVolume } = useNotifications();
 
   const autoSaveSession = useCallback(async (minutes: number) => {
     if (minutes <= 0) return;
@@ -208,6 +210,8 @@ export function TimerPage() {
     onStop: handlePartialStop,
   });
   const floatingInactive = !isRunning && !isBreak && timeLeft === config.work * 60;
+
+  useEffect(() => () => stopSound(), [stopSound]);
 
   return (
     <div className="animate-fade-in">
@@ -471,11 +475,39 @@ export function TimerPage() {
               <p className="text-xs text-text-tertiary mt-1">&mdash; {quote.author}</p>
             </div>
           </div>
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <button
+              onClick={stopSound}
+              className="p-2 rounded-lg text-text-tertiary hover:text-text-primary hover:bg-surface-tertiary transition-colors"
+              title="Stop sound"
+            >
+              <VolumeX size={16} />
+            </button>
+            <div className="flex items-center gap-2">
+              <Volume2 size={14} className="text-text-tertiary" />
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.05}
+                value={notifVolume}
+                onChange={(e) => setNotifVolume(parseFloat(e.target.value))}
+                className="w-24 h-1.5 rounded-full appearance-none cursor-pointer bg-surface-tertiary accent-primary-500
+                  [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5
+                  [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary-500
+                  [&::-webkit-slider-thumb]:shadow-sm
+                  [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:w-3.5 [&::-moz-range-thumb]:h-3.5
+                  [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-primary-500
+                  [&::-moz-range-thumb]:border-0"
+              />
+              <span className="text-xs text-text-tertiary w-8 text-right">{Math.round(notifVolume * 100)}%</span>
+            </div>
+          </div>
           <div className="flex gap-3 justify-center">
-            <Button variant="secondary" onClick={() => { setShowComplete(false); start(); }}>
+            <Button variant="secondary" onClick={() => { stopSound(); setShowComplete(false); start(); }}>
               Start Next
             </Button>
-            <Button variant="ghost" onClick={() => setShowComplete(false)}>
+            <Button variant="ghost" onClick={() => { stopSound(); setShowComplete(false); }}>
               Close
             </Button>
           </div>

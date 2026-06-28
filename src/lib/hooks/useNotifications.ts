@@ -1,11 +1,36 @@
 "use client";
 
-import { useCallback, useRef } from "react";
+import { useCallback, useRef, useState } from "react";
 
 const PERM_KEY = "peakhours-notification-permission";
+const VOLUME_KEY = "peakhours-sound-volume";
+
+function getSavedVolume(): number {
+  if (typeof window === "undefined") return 0.3;
+  try {
+    const v = localStorage.getItem(VOLUME_KEY);
+    if (v !== null) {
+      const n = parseFloat(v);
+      if (!isNaN(n) && n >= 0 && n <= 1) return n;
+    }
+  } catch {}
+  return 0.3;
+}
 
 export function useNotifications() {
   const unlockedRef = useRef(false);
+  const currentAudioRef = useRef<HTMLAudioElement | null>(null);
+  const volumeRef = useRef(getSavedVolume());
+  const [volume, setVolumeState] = useState(volumeRef.current);
+
+  const setVolume = useCallback((v: number) => {
+    const clamped = Math.max(0, Math.min(1, v));
+    volumeRef.current = clamped;
+    setVolumeState(clamped);
+    try {
+      localStorage.setItem(VOLUME_KEY, clamped.toString());
+    } catch {}
+  }, []);
 
   const initAudio = useCallback(() => {
     if (unlockedRef.current) return;
@@ -28,15 +53,28 @@ export function useNotifications() {
     }
   }, []);
 
+  const stopSound = useCallback(() => {
+    if (currentAudioRef.current) {
+      currentAudioRef.current.pause();
+      currentAudioRef.current.currentTime = 0;
+      currentAudioRef.current = null;
+    }
+  }, []);
+
   const notify = useCallback(
     (title: string, body: string, soundUrl?: string) => {
       if (typeof window === "undefined") return;
 
       if (soundUrl) {
         try {
+          stopSound();
           const a = new Audio(soundUrl);
-          a.volume = 0.3;
+          a.volume = volumeRef.current;
           a.play().catch(() => {});
+          currentAudioRef.current = a;
+          a.addEventListener("ended", () => {
+            if (currentAudioRef.current === a) currentAudioRef.current = null;
+          });
         } catch {}
       }
 
@@ -56,5 +94,5 @@ export function useNotifications() {
     []
   );
 
-  return { requestPermission, notify, initAudio };
+  return { requestPermission, notify, initAudio, stopSound, volume, setVolume };
 }
