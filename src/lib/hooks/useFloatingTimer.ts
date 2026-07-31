@@ -150,6 +150,10 @@ export function useFloatingTimer(actions: FloatingTimerActions = {}) {
     if (!pip || pip.closed) return;
     const doc = pip.document;
     const state = useTimerStore.getState();
+    const timeLeft =
+      state.isRunning && state.endAt !== null
+        ? Math.max(0, Math.ceil((state.endAt - Date.now()) / 1000))
+        : state.timeLeft;
 
     const timer = doc.getElementById("pe-timer");
     const phase = doc.getElementById("pe-phase");
@@ -157,10 +161,10 @@ export function useFloatingTimer(actions: FloatingTimerActions = {}) {
     const pause = doc.getElementById("pe-pause");
     const progress = doc.getElementById("pe-progress");
     const duration = (state.isBreak ? state.config.break : state.config.work) * 60;
-    const elapsed = Math.max(0, duration - state.timeLeft);
+    const elapsed = Math.max(0, duration - timeLeft);
     const progressPct = duration > 0 ? Math.min(100, Math.round((elapsed / duration) * 100)) : 0;
 
-    if (timer) timer.textContent = formatTimerTime(state.timeLeft);
+    if (timer) timer.textContent = formatTimerTime(timeLeft);
     if (phase) phase.textContent = state.isBreak ? "Break Time" : "Focus Time";
     if (badge) badge.textContent = MODE_MAP[state.mode] || state.mode;
     if (pause) pause.textContent = state.isRunning ? "Pause" : "Resume";

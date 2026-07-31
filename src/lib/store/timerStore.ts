@@ -24,6 +24,7 @@ interface TimerState {
   completed: boolean;
   lastCompletedPhase: "work" | "break" | null;
   intervalId: ReturnType<typeof setInterval> | null;
+  endAt: number | null;
 
   setMode: (mode: TimerMode) => void;
   setCustomConfig: (work: number, breakMinutes: number) => void;
@@ -33,6 +34,11 @@ interface TimerState {
   stop: () => void;
   reset: () => void;
   clearTimer: () => void;
+  tick: () => void;
+}
+
+function computeRemaining(endAt: number): number {
+  return Math.max(0, Math.ceil((endAt - Date.now()) / 1000));
 }
 
 export const useTimerStore = create<TimerState>((set, get) => ({
@@ -45,6 +51,7 @@ export const useTimerStore = create<TimerState>((set, get) => ({
   completed: false,
   lastCompletedPhase: null,
   intervalId: null,
+  endAt: null,
 
   clearTimer: () => {
     const { intervalId } = get();
@@ -57,56 +64,70 @@ export const useTimerStore = create<TimerState>((set, get) => ({
   setMode: (mode) => {
     get().clearTimer();
     const config = MODE_CONFIGS[mode];
-    set({ mode, config, timeLeft: config.work * 60, isRunning: false, isBreak: false, completed: false, lastCompletedPhase: null });
+    set({ mode, config, timeLeft: config.work * 60, isRunning: false, isBreak: false, completed: false, lastCompletedPhase: null, endAt: null });
   },
 
   setCustomConfig: (work, breakMinutes) => {
     get().clearTimer();
     const config = { work, break: breakMinutes };
     MODE_CONFIGS.custom = config;
-    set({ config, timeLeft: work * 60, isRunning: false, isBreak: false, completed: false, lastCompletedPhase: null });
+    set({ config, timeLeft: work * 60, isRunning: false, isBreak: false, completed: false, lastCompletedPhase: null, endAt: null });
+  },
+
+  tick: () => {
+    const current = get();
+    if (!current.isRunning || current.endAt === null) return;
+
+    const remaining = computeRemaining(current.endAt);
+
+    if (remaining <= 0) {
+      current.clearTimer();
+      if (current.isBreak) {
+        set({
+          isRunning: false,
+          endAt: null,
+          timeLeft: current.config.work * 60,
+          isBreak: false,
+          completed: true,
+          completedMinutes: current.completedMinutes,
+          lastCompletedPhase: "break",
+        });
+      } else {
+        set({
+          isRunning: false,
+          endAt: null,
+          isBreak: true,
+          timeLeft: current.config.break * 60,
+          completed: true,
+          completedMinutes: current.completedMinutes + current.config.work,
+          lastCompletedPhase: "work",
+        });
+      }
+      return;
+    }
+
+    if (remaining !== current.timeLeft) {
+      set({ timeLeft: remaining });
+    }
   },
 
   start: () => {
     get().clearTimer();
     const state = get();
+    const endAt = Date.now() + state.timeLeft * 1000;
 
     const id = setInterval(() => {
-      const current = get();
-
-      if (current.timeLeft <= 1) {
-        current.clearTimer();
-        if (current.isBreak) {
-          set({
-            isRunning: false,
-            timeLeft: current.config.work * 60,
-            isBreak: false,
-            completed: true,
-            completedMinutes: current.completedMinutes,
-            lastCompletedPhase: "break",
-          });
-        } else {
-          set({
-            isRunning: false,
-            isBreak: true,
-            timeLeft: current.config.break * 60,
-            completed: true,
-            completedMinutes: current.completedMinutes + current.config.work,
-            lastCompletedPhase: "work",
-          });
-        }
-        return;
-      }
-
-      set({ timeLeft: current.timeLeft - 1 });
+      get().tick();
     }, 1000);
 
-    set({ isRunning: true, completed: false, intervalId: id });
+    set({ isRunning: true, completed: false, intervalId: id, endAt });
   },
 
   pause: () => {
+    const current = get();
+    const timeLeft = current.endAt !== null ? computeRemaining(current.endAt) : current.timeLeft;
     get().clearTimer();
-    set({ isRunning: false });
+    set({ isRunning: false, timeLeft, endAt: null });
   },
 
   resume: () => {
@@ -116,13 +137,13 @@ export const useTimerStore = create<TimerState>((set, get) => ({
   stop: () => {
     get().clearTimer();
     const config = get().config;
-    set({ isRunning: false, timeLeft: config.work * 60, isBreak: false, completed: false, lastCompletedPhase: null });
+    set({ isRunning: false, timeLeft: config.work * 60, isBreak: false, completed: false, lastCompletedPhase: null, endAt: null });
   },
 
   reset: () => {
     get().clearTimer();
     const config = get().config;
-    set({ isRunning: false, timeLeft: config.work * 60, isBreak: false, completedMinutes: 0, completed: false, lastCompletedPhase: null });
+    set({ isRunning: false, timeLeft: config.work * 60, isBreak: false, completedMinutes: 0, completed: false, lastCompletedPhase: null, endAt: null });
   },
 }));
 

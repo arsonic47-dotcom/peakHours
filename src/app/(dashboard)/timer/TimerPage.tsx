@@ -210,6 +210,16 @@ export function TimerPage() {
   });
   const floatingInactive = !isRunning && !isBreak && timeLeft === config.work * 60;
 
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        useTimerStore.getState().tick();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, []);
+
   useEffect(() => () => stopSound(), [stopSound]);
 
   return (
