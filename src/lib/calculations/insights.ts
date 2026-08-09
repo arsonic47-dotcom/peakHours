@@ -82,6 +82,52 @@ function getLastCompleteWeeks(sessions: StudySession[]): { hours: number[]; labe
   return { hours, labels };
 }
 
+export interface TodayProjection {
+  todayMinutes: number;
+  totalHours: number;
+  noStudyToday: boolean;
+  targetReached: boolean;
+  months: number;
+  days: number;
+  finishDate: Date | null;
+}
+
+export function computeTodayProjection(sessions: StudySession[], targetHours: number): TodayProjection {
+  const now = new Date();
+  const todayStart = new Date(now);
+  todayStart.setHours(0, 0, 0, 0);
+
+  const todayMinutes = sessions
+    .filter((s) => new Date(s.started_at) >= todayStart)
+    .reduce((acc, s) => acc + s.duration_minutes, 0);
+
+  const totalHours = sessions.reduce((acc, s) => acc + s.duration_minutes, 0) / 60;
+
+  if (todayMinutes <= 0) {
+    return { todayMinutes, totalHours, noStudyToday: true, targetReached: false, months: 0, days: 0, finishDate: null };
+  }
+
+  const remainingHours = targetHours - totalHours;
+  if (remainingHours <= 0) {
+    return { todayMinutes, totalHours, noStudyToday: false, targetReached: true, months: 0, days: 0, finishDate: null };
+  }
+
+  const todayHours = todayMinutes / 60;
+  const remainingDays = Math.max(1, Math.ceil(remainingHours / todayHours));
+
+  const finishDate = new Date(now.getTime() + remainingDays * 86400000);
+
+  let months =
+    (finishDate.getFullYear() - now.getFullYear()) * 12 +
+    (finishDate.getMonth() - now.getMonth());
+  if (finishDate.getDate() < now.getDate()) months--;
+  const anchor = new Date(now);
+  anchor.setMonth(anchor.getMonth() + months);
+  const days = Math.max(1, Math.ceil((finishDate.getTime() - anchor.getTime()) / 86400000));
+
+  return { todayMinutes, totalHours, noStudyToday: false, targetReached: false, months, days, finishDate };
+}
+
 function getBestWeek(sessions: StudySession[]): { hours: number; label: string } {
   const weeklyMap = new Map<string, number>();
   for (const s of sessions) {
