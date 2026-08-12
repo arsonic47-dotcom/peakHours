@@ -70,13 +70,20 @@ export function useNotifications() {
 
   const playUrl = useCallback((url: string) => {
     lastSoundRef.current = url;
+    const existing = currentAudioRef.current;
+    if (existing) {
+      existing.currentTime = 0;
+      existing.play().catch(() => {});
+      return;
+    }
     const a = new Audio(url);
     a.volume = volumeRef.current;
-    a.play().catch(() => {
-      onEndRef.current?.();
-    });
     currentAudioRef.current = a;
     a.addEventListener("ended", () => {
+      if (currentAudioRef.current === a) currentAudioRef.current = null;
+      onEndRef.current?.();
+    });
+    a.play().catch(() => {
       if (currentAudioRef.current === a) currentAudioRef.current = null;
       onEndRef.current?.();
     });
