@@ -69,6 +69,7 @@ export function useNotifications() {
   }, []);
 
   const playUrl = useCallback((url: string) => {
+    lastSoundRef.current = url;
     const a = new Audio(url);
     a.volume = volumeRef.current;
     a.play().catch(() => {
@@ -99,7 +100,6 @@ export function useNotifications() {
       if (soundUrl) {
         try {
           stopSound();
-          lastSoundRef.current = soundUrl;
           playUrl(soundUrl);
         } catch {}
       }
@@ -120,5 +120,5 @@ export function useNotifications() {
     [playUrl]
   );
 
-  return { requestPermission, notify, initAudio, stopSound, replaySound, volume, setVolume };
+  return { requestPermission, notify, initAudio, stopSound, replaySound, playUrl, volume, setVolume };
 }

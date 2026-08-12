@@ -24,7 +24,13 @@ const selectClass =
 const iconButtonClass =
   "p-2 rounded-lg text-text-tertiary hover:text-text-primary hover:bg-surface-tertiary transition-colors";
 
-export function SoundSettings({ variant = "full" }: { variant?: "full" | "compact" }) {
+export function SoundSettings({
+  variant = "full",
+  onPlay,
+}: {
+  variant?: "full" | "compact";
+  onPlay?: (url: string) => void;
+}) {
   const { showToast } = useUIStore();
   const supabase = createClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -105,6 +111,10 @@ export function SoundSettings({ variant = "full" }: { variant?: "full" | "compac
   };
 
   const playPreview = (url: string) => {
+    if (onPlay) {
+      onPlay(url);
+      return;
+    }
     try {
       const a = new Audio(url);
       a.volume = 0.8;

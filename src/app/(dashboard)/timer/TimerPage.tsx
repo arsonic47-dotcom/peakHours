@@ -62,7 +62,7 @@ export function TimerPage() {
   const [pendingMode, setPendingMode] = useState<typeof mode | null>(null);
   const [showSavePreset, setShowSavePreset] = useState(false);
   const [presetName, setPresetName] = useState("");
-  const { requestPermission, notify, initAudio, stopSound, replaySound, volume: notifVolume, setVolume: setNotifVolume } = useNotifications();
+  const { requestPermission, notify, initAudio, stopSound, replaySound, playUrl, volume: notifVolume, setVolume: setNotifVolume } = useNotifications();
   const [soundPlaying, setSoundPlaying] = useState(false);
 
   const autoSaveSession = useCallback(async (minutes: number) => {
@@ -427,7 +427,7 @@ export function TimerPage() {
             <p className="text-xs font-medium text-text-tertiary uppercase tracking-wide mb-3">
               Sounds
             </p>
-            <SoundSettings variant="compact" />
+            <SoundSettings variant="compact" onPlay={playUrl} />
           </div>
         </div>
 
