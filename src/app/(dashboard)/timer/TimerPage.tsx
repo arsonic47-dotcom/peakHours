@@ -31,6 +31,8 @@ import {
 } from "lucide-react";
 import { useNotifications } from "@/lib/hooks/useNotifications";
 import { useFloatingTimer } from "@/lib/hooks/useFloatingTimer";
+import { getSoundUrl, getSoundPreferences, setSoundPaths } from "@/lib/supabase/sounds";
+import { SoundSettings } from "@/components/sounds/SoundSettings";
 import { motion } from "framer-motion";
 
 const MODES = [
@@ -90,12 +92,12 @@ export function TimerPage() {
       if (state.completed && state.lastCompletedPhase === "work") {
         setSoundPlaying(true);
         autoSaveSession(state.config.work);
-        notify("Focus Complete", `${state.config.work} minute session saved`, "/sounds/complete.mp3", () => setSoundPlaying(false));
+        notify("Focus Complete", `${state.config.work} minute session saved`, getSoundUrl("complete"), () => setSoundPlaying(false));
         showToast(`Break started: ${state.config.break} min`, "info");
         resume();
       } else if (state.completed && state.lastCompletedPhase === "break") {
         setSoundPlaying(true);
-        notify("Break Over", "Time to focus!", "/sounds/break.mp3", () => setSoundPlaying(false));
+        notify("Break Over", "Time to focus!", getSoundUrl("break"), () => setSoundPlaying(false));
       }
     });
     return () => unsub();
@@ -218,6 +220,17 @@ export function TimerPage() {
     };
     document.addEventListener("visibilitychange", handleVisibility);
     return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const prefs = await getSoundPreferences();
+      if (!cancelled) {
+        setSoundPaths(prefs.complete_sound_path, prefs.break_sound_path);
+      }
+    })();
+    return () => { cancelled = true; };
   }, []);
 
   useEffect(() => () => stopSound(), [stopSound]);
@@ -406,6 +419,15 @@ export function TimerPage() {
                 [&::-moz-range-thumb]:border-0"
             />
             <span className="text-xs text-text-tertiary w-8 text-right">{Math.round(notifVolume * 100)}%</span>
+          </div>
+        </div>
+
+        <div className="mb-8 max-w-md mx-auto">
+          <div className="p-4 rounded-xl bg-surface-secondary border border-border">
+            <p className="text-xs font-medium text-text-tertiary uppercase tracking-wide mb-3">
+              Sounds
+            </p>
+            <SoundSettings variant="compact" />
           </div>
         </div>
 

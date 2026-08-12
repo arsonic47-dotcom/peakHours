@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { useUIStore } from "@/lib/store/uiStore";
 import { useRouter } from "next/navigation";
-import { User, Mountain, Bell, Palette, LogOut } from "lucide-react";
+import { SoundSettings } from "@/components/sounds/SoundSettings";
+import { User, Mountain, Bell, Palette, LogOut, Music } from "lucide-react";
 
 export function SettingsPage() {
   const { theme, toggleTheme, showToast } = useUIStore();
@@ -132,6 +133,14 @@ export function SettingsPage() {
               />
             </button>
           </div>
+        </Card>
+
+        <Card className="p-6">
+          <CardTitle className="flex items-center gap-2 mb-4">
+            <Music size={18} className="text-primary-600" />
+            Sounds
+          </CardTitle>
+          <SoundSettings variant="full" />
         </Card>
 
         <div className="flex items-center justify-between">
