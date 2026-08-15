@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useTimerStore, formatTimerTime } from "@/lib/store/timerStore";
 import { useSessionStore } from "@/lib/store/sessionStore";
 import { useUIStore } from "@/lib/store/uiStore";
@@ -62,8 +62,29 @@ export function TimerPage() {
   const [pendingMode, setPendingMode] = useState<typeof mode | null>(null);
   const [showSavePreset, setShowSavePreset] = useState(false);
   const [presetName, setPresetName] = useState("");
-  const { requestPermission, notify, initAudio, stopSound, replaySound, playUrl, volume: notifVolume, setVolume: setNotifVolume } = useNotifications();
+  const { requestPermission, notify, initAudio, stopSound, replaySound, playUrl, scheduleBreakSound, volume: notifVolume, setVolume: setNotifVolume } = useNotifications();
   const [soundPlaying, setSoundPlaying] = useState(false);
+  const breakScheduleRef = useRef<(() => void) | null>(null);
+
+  const cancelBreakSchedule = useCallback(() => {
+    breakScheduleRef.current?.();
+    breakScheduleRef.current = null;
+  }, []);
+
+  const stopBreakAudio = useCallback(() => {
+    cancelBreakSchedule();
+    stopSound();
+  }, [cancelBreakSchedule, stopSound]);
+
+  const startBreakSound = useCallback(() => {
+    cancelBreakSchedule();
+    const endAt = useTimerStore.getState().endAt;
+    if (!endAt) return;
+    setSoundPlaying(true);
+    breakScheduleRef.current = scheduleBreakSound(getSoundUrl("break"), endAt, () =>
+      setSoundPlaying(false)
+    );
+  }, [cancelBreakSchedule, scheduleBreakSound]);
 
   const autoSaveSession = useCallback(async (minutes: number) => {
     if (minutes <= 0) return;
@@ -95,13 +116,14 @@ export function TimerPage() {
         notify("Focus Complete", `${state.config.work} minute session saved`, getSoundUrl("complete"), () => setSoundPlaying(false));
         showToast(`Break started: ${state.config.break} min`, "info");
         resume();
+        startBreakSound();
       } else if (state.completed && state.lastCompletedPhase === "break") {
-        setSoundPlaying(true);
-        notify("Break Over", "Time to focus!", getSoundUrl("break"), () => setSoundPlaying(false));
+        notify("Break Over", "Time to focus!");
+        setSoundPlaying(false);
       }
     });
     return () => unsub();
-  }, [autoSaveSession, notify, resume]);
+  }, [autoSaveSession, notify, resume, startBreakSound]);
 
   const pct = isBreak
     ? ((config.break * 60 - timeLeft) / (config.break * 60)) * 100
@@ -117,6 +139,7 @@ export function TimerPage() {
       setPendingAction("stop");
       setShowConfirmPartial(true);
     } else {
+      stopBreakAudio();
       stop();
     }
   };
@@ -128,6 +151,7 @@ export function TimerPage() {
       setPendingAction("reset");
       setShowConfirmPartial(true);
     } else {
+      stopBreakAudio();
       reset();
     }
   };
@@ -136,6 +160,7 @@ export function TimerPage() {
     await autoSaveSession(pendingPartialMinutes);
     setShowConfirmPartial(false);
     setPendingPartialMinutes(0);
+    stopBreakAudio();
     if (pendingAction === "stop") stop();
     else reset();
   };
@@ -143,6 +168,7 @@ export function TimerPage() {
   const discardPartialSave = () => {
     setShowConfirmPartial(false);
     setPendingPartialMinutes(0);
+    stopBreakAudio();
     if (pendingAction === "stop") stop();
     else reset();
   };
@@ -153,6 +179,7 @@ export function TimerPage() {
       setPendingMode(newMode);
       setShowModeConfirm(true);
     } else {
+      stopBreakAudio();
       setMode(newMode);
       setShowCustomForm(false);
     }
@@ -160,6 +187,7 @@ export function TimerPage() {
 
   const confirmModeSwitch = () => {
     if (pendingMode) {
+      stopBreakAudio();
       setMode(pendingMode);
       setShowCustomForm(false);
     }
@@ -198,13 +226,17 @@ export function TimerPage() {
   const handleFloatingToggle = useCallback(() => {
     const s = useTimerStore.getState();
     if (s.isRunning) {
+      stopBreakAudio();
       s.pause();
       return;
     }
     requestPermission();
     initAudio();
     s.resume();
-  }, [requestPermission, initAudio]);
+    if (useTimerStore.getState().isBreak) {
+      startBreakSound();
+    }
+  }, [requestPermission, initAudio, stopBreakAudio, startBreakSound]);
 
   const floatingTimer = useFloatingTimer({
     onToggleRunning: handleFloatingToggle,
@@ -233,7 +265,10 @@ export function TimerPage() {
     return () => { cancelled = true; };
   }, []);
 
-  useEffect(() => () => stopSound(), [stopSound]);
+  useEffect(() => () => {
+    cancelBreakSchedule();
+    stopSound();
+  }, [cancelBreakSchedule, stopSound]);
 
   return (
     <div className="animate-fade-in">
@@ -433,7 +468,7 @@ export function TimerPage() {
 
         <div className="flex items-center justify-center gap-3 mb-8 flex-wrap">
           {!isRunning ? (
-            <Button size="xl" onClick={() => { requestPermission(); initAudio(); start(); }} className="gap-2 min-w-[140px] max-sm:min-w-[120px]"
+            <Button size="xl" onClick={() => { requestPermission(); initAudio(); start(); if (useTimerStore.getState().isBreak) startBreakSound(); }} className="gap-2 min-w-[140px] max-sm:min-w-[120px]"
               disabled={soundPlaying}
               title={soundPlaying ? "Waiting for break sound to finish..." : undefined}
             >
@@ -441,7 +476,7 @@ export function TimerPage() {
               {timeLeft === config.work * 60 && !isBreak ? "Start" : "Resume"}
             </Button>
           ) : (
-            <Button size="xl" variant="secondary" onClick={pause} className="gap-2 min-w-[140px]">
+            <Button size="xl" variant="secondary" onClick={() => { stopBreakAudio(); pause(); }} className="gap-2 min-w-[140px]">
               <Pause size={20} />
               Pause
             </Button>

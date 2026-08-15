@@ -98,6 +98,90 @@ export function useNotifications() {
     } catch {}
   }, [playUrl]);
 
+  const getSoundDuration = useCallback((url: string): Promise<number | null> => {
+    return new Promise((resolve) => {
+      try {
+        const a = new Audio(url);
+        a.preload = "auto";
+        let settled = false;
+        const done = (value: number | null) => {
+          if (settled) return;
+          settled = true;
+          a.removeEventListener("loadedmetadata", onMeta);
+          a.removeEventListener("durationchange", onDur);
+          clearTimeout(timer);
+          resolve(value);
+        };
+        const onMeta = () => {
+          if (Number.isFinite(a.duration) && a.duration > 0) done(a.duration);
+        };
+        const onDur = () => {
+          if (Number.isFinite(a.duration) && a.duration > 0) done(a.duration);
+        };
+        a.addEventListener("loadedmetadata", onMeta);
+        a.addEventListener("durationchange", onDur);
+        const timer = setTimeout(() => done(null), 4000);
+        a.load();
+      } catch {
+        resolve(null);
+      }
+    });
+  }, []);
+
+  const scheduleBreakSound = useCallback(
+    (url: string, breakEndAt: number, onEnd?: () => void) => {
+      let cancelled = false;
+      let startTimer: ReturnType<typeof setTimeout> | undefined;
+      let endTimer: ReturnType<typeof setTimeout> | undefined;
+
+      const cancel = () => {
+        cancelled = true;
+        if (startTimer !== undefined) clearTimeout(startTimer);
+        if (endTimer !== undefined) clearTimeout(endTimer);
+      };
+
+      (async () => {
+        const durationMs = await getSoundDuration(url);
+        if (cancelled) return;
+
+        const now = Date.now();
+        const breakDurMs = breakEndAt - now;
+        if (breakDurMs <= 0) return;
+
+        const d = durationMs !== null ? Math.round(durationMs * 1000) : breakDurMs;
+        const startDelay = Math.max(0, breakDurMs - d);
+
+        const play = () => {
+          if (cancelled) return;
+          stopSound();
+          playUrl(url);
+          const a = currentAudioRef.current;
+          if (a) {
+            a.addEventListener("timeupdate", () => {
+              if (cancelled) return;
+              if (Date.now() >= breakEndAt - 50) {
+                stopSound();
+                onEnd?.();
+              }
+            });
+          }
+        };
+
+        if (startDelay <= 0) play();
+        else startTimer = setTimeout(play, startDelay);
+
+        endTimer = setTimeout(() => {
+          if (cancelled) return;
+          stopSound();
+          onEnd?.();
+        }, breakDurMs);
+      })();
+
+      return cancel;
+    },
+    [getSoundDuration, stopSound, playUrl]
+  );
+
   const notify = useCallback(
     (title: string, body: string, soundUrl?: string, onEnd?: () => void) => {
       if (typeof window === "undefined") return;
@@ -127,5 +211,5 @@ export function useNotifications() {
     [playUrl]
   );
 
-  return { requestPermission, notify, initAudio, stopSound, replaySound, playUrl, volume, setVolume };
+  return { requestPermission, notify, initAudio, stopSound, replaySound, playUrl, getSoundDuration, scheduleBreakSound, volume, setVolume };
 }
