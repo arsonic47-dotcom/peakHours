@@ -19,6 +19,7 @@ import {
   LogOut,
   Users,
   Medal,
+  Clock,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
@@ -27,6 +28,7 @@ import { useEffect } from "react";
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/timer", label: "Focus Timer", icon: Timer },
+  { href: "/add-session", label: "Add Time", icon: Clock },
   { href: "/journal", label: "Journey Journal", icon: BookOpen },
   { href: "/calendar", label: "Calendar", icon: Calendar },
   { href: "/friends", label: "Friends", icon: Users },

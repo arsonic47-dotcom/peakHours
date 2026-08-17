@@ -227,6 +227,12 @@ export function DashboardContent() {
                 Start Focus Timer
               </Button>
             </Link>
+            <Link href="/add-session">
+              <Button variant="secondary" className="w-full justify-start gap-3" size="lg">
+                <Clock size={18} />
+                Log Manual Session
+              </Button>
+            </Link>
             <Link href="/journal">
               <Button variant="secondary" className="w-full justify-start gap-3" size="lg">
                 <BookOpen size={18} />
